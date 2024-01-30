@@ -81,8 +81,7 @@ if (isset($serviceUrl) && array_key_exists('ticket', $_GET)) {
         ) {
             $ticketStore->deleteTicket($_GET['ticket']);
 
-            $attributes = $serviceTicket['attributes'];
-
+	    $attributes = $serviceTicket['attributes'];
             if (
                 !$ticketFactory->isExpired($serviceTicket) &&
                 sanitize($serviceTicket['service']) == sanitize($serviceUrl) &&
@@ -120,12 +119,11 @@ if (isset($serviceUrl) && array_key_exists('ticket', $_GET)) {
                     }
                 }
 
-                echo $protocol->getValidateSuccessResponse($serviceTicket['userName']);
+		$response = $protocol->getValidateSuccessResponse($serviceTicket['userName']);
+                echo $response;
             } else {
                 if ($ticketFactory->isExpired($serviceTicket)) {
                     $message = 'Ticket ' . var_export($_GET['ticket'], true) . ' has expired';
-
-                    Logger::debug('casserver:' . $message);
 
                     echo $protocol->getValidateFailureResponse(C::ERR_INVALID_TICKET, $message);
                 } else {
@@ -134,19 +132,13 @@ if (isset($serviceUrl) && array_key_exists('ticket', $_GET)) {
                             var_export($serviceTicket['service'], true) .
                             ' but was: ' . var_export($serviceUrl, true);
 
-                        Logger::debug('casserver:' . $message);
-
                         echo $protocol->getValidateFailureResponse(C::ERR_INVALID_SERVICE, $message);
                     } else {
                         if ($serviceTicket['forceAuthn'] != $forceAuthn) {
                             $message = 'Ticket was issue from single sign on session';
 
-                            Logger::debug('casserver:' . $message);
-
                             echo $protocol->getValidateFailureResponse(C::ERR_INVALID_TICKET, $message);
                         } else {
-                            Logger::error('casserver:' . $method . ': internal server error.');
-
                             echo $protocol->getValidateFailureResponse(C::ERR_INTERNAL_ERROR, 'Unknown internal error');
                         }
                     }
@@ -155,8 +147,6 @@ if (isset($serviceUrl) && array_key_exists('ticket', $_GET)) {
         } else {
             if (is_null($serviceTicket)) {
                 $message = 'Ticket ' . var_export($_GET['ticket'], true) . ' not recognized';
-
-                Logger::debug('casserver:' . $message);
 
                 echo $protocol->getValidateFailureResponse(C::ERR_INVALID_TICKET, $message);
             } else {
@@ -169,13 +159,9 @@ if (isset($serviceUrl) && array_key_exists('ticket', $_GET)) {
                     $message = 'Ticket ' . var_export($_GET['ticket'], true) .
                         ' is a proxy ticket. Use proxyValidate instead.';
 
-                    Logger::debug('casserver:' . $message);
-
                     echo $protocol->getValidateFailureResponse(C::ERR_INVALID_TICKET, $message);
                 } else {
                     $message = 'Ticket ' . var_export($_GET['ticket'], true) . ' is not a service ticket';
-
-                    Logger::debug('casserver:' . $message);
 
                     echo $protocol->getValidateFailureResponse(C::ERR_INVALID_TICKET, $message);
                 }
@@ -192,13 +178,9 @@ if (isset($serviceUrl) && array_key_exists('ticket', $_GET)) {
     if (!array_key_exists('service', $_GET)) {
         $message = 'Missing service parameter: [service]';
 
-        Logger::debug('casserver:' . $message);
-
         echo $protocol->getValidateFailureResponse(C::ERR_INVALID_REQUEST, $message);
     } else {
         $message = 'Missing ticket parameter: [ticket]';
-
-        Logger::debug('casserver:' . $message);
 
         echo $protocol->getValidateFailureResponse(C::ERR_INVALID_REQUEST, $message);
     }

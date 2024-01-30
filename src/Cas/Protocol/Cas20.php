@@ -221,12 +221,11 @@ class Cas20
         string $attributeValue
     ): Chunk {
         $xmlDocument = DOMDocumentFactory::create();
-
         $attributeValue = $this->base64EncodeAttributes ? base64_encode($attributeValue) : $attributeValue;
-        $attributeElement = $xmlDocument->createElement('cas:' . $attributeName);
-        $attributeElement->appendChild($attributeValueNode);
+        $attributeElement = $xmlDocument->createElementNS("http://www.yale.edu/tp/cas","cas:".$attributeName,$attributeValue);
 
-        return new Chunk($attributeElement);
+	$chunk = new Chunk($attributeElement);
+	return $chunk;
     }
 
 
@@ -248,6 +247,6 @@ class Cas20
             $name,
             FILTER_VALIDATE_REGEXP,
             ['options' => ['regexp' => '/^[a-zA-Z_][\w.-]*$/']]
-        ) === true;
+        ) !== false;
     }
 }
