@@ -25,14 +25,11 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\casserver\Cas\Protocol;
 
-use DOMDocument;
-use DOMElement;
-use DOMException;
+use DateTimeImmutable;
 use SimpleSAML\CAS\XML\cas\Attributes;
 use SimpleSAML\CAS\XML\cas\AuthenticationDate;
 use SimpleSAML\CAS\XML\cas\AuthenticationFailure;
 use SimpleSAML\CAS\XML\cas\AuthenticationSuccess;
-use SimpleSAML\CAS\XML\cas\Code;
 use SimpleSAML\CAS\XML\cas\IsFromNewLogin;
 use SimpleSAML\CAS\XML\cas\LongTermAuthenticationRequestTokenUsed;
 use SimpleSAML\CAS\XML\cas\ProxyFailure;
@@ -51,7 +48,6 @@ use function count;
 use function filter_var;
 use function is_null;
 use function is_string;
-use function strval;
 use function str_replace;
 
 class Cas20
@@ -121,9 +117,9 @@ class Cas20
 
     /**
      * @param string $username
-     * @return \SimpleSAML\CAS\XML\cas\AuthenticationSuccess
+     * @return \SimpleSAML\CAS\XML\cas\ServiceResponse
      */
-    public function getValidateSuccessResponse(string $username): AuthenticationSuccess
+    public function getValidateSuccessResponse(string $username): ServiceResponse
     {
         $user = new User($username);
 
@@ -149,21 +145,22 @@ class Cas20
             if (!is_null($this->base64IndicatorAttribute)) {
                 $attr[] = $this->generateCas20Attribute(
                     $this->base64IndicatorAttribute,
-                    $this->base64EncodeAttributes ? "true" : "false"
+                    $this->base64EncodeAttributes ? "true" : "false",
                 );
             }
         }
 
         $attributes = new Attributes(
-            new AuthenticationDate(gmdate('Y-m-d\TH:i:s\Z', time())),
+            new AuthenticationDate(new DateTimeImmutable('now')),
             new LongTermAuthenticationRequestTokenUsed('true'),
             new IsFromNewLogin('true'),
             $attr,
         );
 
-        $authenticationSucces = new AuthenticationSuccess($user, $attributes, $proxyGrantingTicket);
+        $authenticationSuccess = new AuthenticationSuccess($user, $attributes, $proxyGrantingTicket);
+        $serviceResponse = new ServiceResponse($authenticationSuccess);
 
-        return $authenticationSucces;
+        return $serviceResponse;
     }
 
 
@@ -174,8 +171,7 @@ class Cas20
      */
     public function getValidateFailureResponse(string $errorCode, string $explanation): ServiceResponse
     {
-        $code = new Code($errorCode);
-        $authenticationFailure = new AuthenticationFailure($explanation, $code);
+        $authenticationFailure = new AuthenticationFailure($explanation, $errorCode);
         $serviceResponse = new ServiceResponse($authenticationFailure);
 
         return $serviceResponse;
@@ -203,8 +199,7 @@ class Cas20
      */
     public function getProxyFailureResponse(string $errorCode, string $explanation): ServiceResponse
     {
-        $code = new Code($errorCode);
-        $proxyFailure = new ProxyFailure($explanation, $code);
+        $proxyFailure = new ProxyFailure($explanation, $errorCode);
         $serviceResponse = new ServiceResponse($proxyFailure);
 
         return $serviceResponse;
@@ -218,11 +213,12 @@ class Cas20
      */
     private function generateCas20Attribute(
         string $attributeName,
-        string $attributeValue
+        string $attributeValue,
     ): Chunk {
         $xmlDocument = DOMDocumentFactory::create();
         $attributeValue = $this->base64EncodeAttributes ? base64_encode($attributeValue) : $attributeValue;
         $attributeElement = $xmlDocument->createElementNS("http://www.yale.edu/tp/cas","cas:".$attributeName,$attributeValue);
+        $attributeElement = $xmlDocument->createElementNS(Attributes::NS, 'cas:' . $attributeName, $attributeValue);
 
 	$chunk = new Chunk($attributeElement);
 	return $chunk;
@@ -246,7 +242,7 @@ class Cas20
         return filter_var(
             $name,
             FILTER_VALIDATE_REGEXP,
-            ['options' => ['regexp' => '/^[a-zA-Z_][\w.-]*$/']]
+            ['options' => ['regexp' => '/^[a-zA-Z_][\w.-]*$/']],
         ) !== false;
     }
 }

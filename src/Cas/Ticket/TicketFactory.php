@@ -62,7 +62,7 @@ class TicketFactory
         return [
             'id' => $sessionId,
             'validBefore' => $expiresAt,
-            'renewId' => $randomUtils->generateID()
+            'renewId' => $randomUtils->generateID(),
         ];
     }
 
@@ -103,7 +103,7 @@ class TicketFactory
      */
     public function createProxyTicket(array $content): array
     {
-        $randomUtils = Random();
+        $randomUtils = new Random();
         $id = str_replace('_', 'PT-', $randomUtils->generateID());
         $expiresAt = time() + $this->proxyTicketExpireTime;
 

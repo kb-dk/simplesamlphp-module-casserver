@@ -6,11 +6,11 @@ namespace SimpleSAML\Module\casserver\Cas\Protocol;
 
 use SimpleSAML\Configuration;
 use SimpleSAML\Module\casserver\Shib13\AuthnResponse;
+use SimpleSAML\SOAP11\XML\env\Body;
+use SimpleSAML\SOAP11\XML\env\Envelope;
 use SimpleSAML\XML\Chunk;
 use SimpleSAML\XML\DOMDocumentFactory;
 use SimpleSAML\XML\SerializableElementInterface;
-use SimpleSAML\XML\SOAP11\XML\env\Body;
-use SimpleSAML\XML\SOAP11\XML\env\Envelope;
 
 class SamlValidateResponder
 {
@@ -29,7 +29,7 @@ class SamlValidateResponder
         $ar = new AuthnResponse();
         $idpMetadata = [
             // CAS doesn't seem to care what this is, however SSP code requires it to be set
-            'entityid' => 'localhost'
+            'entityid' => 'localhost',
         ];
         $spMetadata = [
             'entityid' => $serviceUrl,
@@ -39,14 +39,14 @@ class SamlValidateResponder
             Configuration::loadFromArray($idpMetadata),
             Configuration::loadFromArray($spMetadata),
             $shire,
-            $attributes
+            $attributes,
         );
 
         // replace NameIdentifier with actually username
         $ret = preg_replace(
             '|<NameIdentifier(.*)>.*</NameIdentifier>|',
             '<NameIdentifier$1>' . htmlspecialchars($user) . '</NameIdentifier>',
-            $authnResponseXML
+            $authnResponseXML,
         );
         // CAS seems to prefer this type of assertiond
         $ret = str_replace('urn:oasis:names:tc:SAML:1.0:cm:bearer', 'urn:oasis:names:tc:SAML:1.0:cm:artifact', $ret);
@@ -54,7 +54,7 @@ class SamlValidateResponder
         $ret = str_replace(
             'urn:mace:shibboleth:1.0:attributeNamespace:uri',
             'http://www.ja-sig.org/products/cas/',
-            $ret
+            $ret,
         );
 
         $doc = DOMDocumentFactory::fromString($ret);
@@ -64,7 +64,7 @@ class SamlValidateResponder
 
     /**
      * @param \SimpleSAML\XML\SerializableElementInterface $samlResponse
-     * @return \SimpleSAML\XML\SOAP11\XML\env\Envelope
+     * @return \SimpleSAML\SOAP11\XML\env\Envelope
      */
     public function wrapInSoap(SerializableElementInterface $samlResponse): Envelope
     {

@@ -23,6 +23,8 @@
  *  url     - optional if a logout page is displayed
  */
 
+declare(strict_types=1);
+
 /* Load simpleSAMLphp, configuration and metadata */
 $casconfig = \SimpleSAML\Configuration::getConfig('module_casserver.php');
 
@@ -69,8 +71,8 @@ if ($as->isAuthenticated()) {
         $as->logout(
             $httpUtils->addURLParameters(
                 \SimpleSAML\Module::getModuleURL('casserver/loggedOut.php'),
-                array_key_exists('url', $_GET) ? ['url' => $_GET['url']] : []
-            )
+                array_key_exists('url', $_GET) ? ['url' => $_GET['url']] : [],
+            ),
         );
     }
 } else {
@@ -82,8 +84,8 @@ if ($as->isAuthenticated()) {
         $httpUtils->redirectTrustedURL(
             $httpUtils->addURLParameters(
                 \SimpleSAML\Module::getModuleURL('casserver/loggedOut.php'),
-                array_key_exists('url', $_GET) ? ['url' => $_GET['url']] : []
-            )
+                array_key_exists('url', $_GET) ? ['url' => $_GET['url']] : [],
+            ),
         );
     }
 }

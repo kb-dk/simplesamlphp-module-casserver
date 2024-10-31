@@ -20,7 +20,7 @@ class SamlValidateTest extends TestCase
         $ticket = [
             'userName' => 'saisusr',
             'attributes' => [
-                'UDC_IDENTIFIER' => [$udcValue]
+                'UDC_IDENTIFIER' => [$udcValue],
             ],
             'service' => $serviceUrl,
         ];
@@ -28,6 +28,7 @@ class SamlValidateTest extends TestCase
         $samlValidate = new SamlValidateResponder();
         $xmlString = $samlValidate->convertToSaml($ticket);
         $response = new SimpleXMLElement(strval($xmlString));
+
         /** @psalm-suppress PossiblyNullPropertyFetch */
         $this->assertEquals($serviceUrl, $response->attributes()->Recipient);
         $this->assertEquals('samlp:Success', $response->Status->StatusCode->attributes()->Value);
@@ -37,7 +38,7 @@ class SamlValidateTest extends TestCase
         $this->assertEquals('saisusr', $attributeStatement->Subject->NameIdentifier);
         $this->assertEquals(
             'urn:oasis:names:tc:SAML:1.0:cm:artifact',
-            $attributeStatement->Subject->SubjectConfirmation->ConfirmationMethod
+            $attributeStatement->Subject->SubjectConfirmation->ConfirmationMethod,
         );
 
         $attribute = $attributeStatement->Attribute;
@@ -47,7 +48,7 @@ class SamlValidateTest extends TestCase
 
         $asSoap = $samlValidate->wrapInSoap($xmlString);
 
-        $this->assertInstanceOf($asSoap, Envelope::class);
+        $this->assertInstanceOf(Envelope::class, $asSoap);
         $this->assertNull($asSoap->getHeader());
         $this->assertNotEmpty($asSoap->getBody());
     }

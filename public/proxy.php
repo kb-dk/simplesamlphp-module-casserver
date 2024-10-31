@@ -25,6 +25,8 @@
  *
  */
 
+declare(strict_types=1);
+
 require_once('utility/urlUtils.php');
 
 $casconfig = \SimpleSAML\Configuration::getConfig('module_casserver.php');
@@ -64,8 +66,8 @@ if (
                     'forceAuthn' => $proxyGrantingTicket['forceAuthn'],
                     'attributes' => $proxyGrantingTicket['attributes'],
                     'proxies' => $proxyGrantingTicket['proxies'],
-                    'sessionId' => $proxyGrantingTicket['sessionId']
-                ]
+                    'sessionId' => $proxyGrantingTicket['sessionId'],
+                ],
             );
 
             $ticketStore->addTicket($proxyTicket);
@@ -96,18 +98,18 @@ if (
 
     \SimpleSAML\Logger::debug('casserver:' . $message);
 
-    echo $protocol->getProxyFailureResponse('INVALID_REQUEST', $message);
+    echo $protocol->getProxyFailureResponse(C::ERR_INVALID_REQUEST, $message);
 } elseif (!checkServiceURL(sanitize($_GET['targetService']), $legal_target_service_urls)) {
     $message = 'Target service parameter not listed as a legal service: [targetService] = ' .
         var_export($_GET['targetService'], true);
 
     \SimpleSAML\Logger::debug('casserver:' . $message);
 
-    echo $protocol->getProxyFailureResponse('INVALID_REQUEST', $message);
+    echo $protocol->getProxyFailureResponse(C::ERR_INVALID_REQUEST, $message);
 } else {
     $message = 'Missing proxy granting ticket parameter: [pgt]';
 
     \SimpleSAML\Logger::debug('casserver:' . $message);
 
-    echo $protocol->getProxyFailureResponse('INVALID_REQUEST', $message);
+    echo $protocol->getProxyFailureResponse(C::ERR_INVALID_REQUEST, $message);
 }

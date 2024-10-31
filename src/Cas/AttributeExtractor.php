@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Module\casserver\Cas;
 
+use SimpleSAML\Auth;
 use SimpleSAML\Configuration;
 use SimpleSAML\Module;
 
@@ -61,7 +62,7 @@ class AttributeExtractor
 
         return [
             'user' => $userName,
-            'attributes' => $casAttributes
+            'attributes' => $casAttributes,
         ];
     }
 
@@ -79,13 +80,13 @@ class AttributeExtractor
         $filters = $casconfig->getOptionalArray('authproc', []);
 
         $state = [
-            'Attributes' => $attributes
+            'Attributes' => $attributes,
         ];
         foreach ($filters as $config) {
             $className = Module::resolveClass(
                 $config['class'],
                 'Auth\Process',
-                \SimpleSAML\Auth\ProcessingFilter::class
+                Auth\ProcessingFilter::class,
             );
             // Unset 'class' to prevent the filter from interpreting it as an option
             unset($config['class']);

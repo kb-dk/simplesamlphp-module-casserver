@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Casserver;
 
+use CurlHandle;
 use DOMDocument;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SimpleSAML\Configuration;
-use SimpleSAML\Logger;
 use SimpleSAML\TestUtils\BuiltInServer;
 use SimpleSAML\XML\DOMDocumentFactory;
 
@@ -61,17 +62,16 @@ class LoginIntegrationTest extends TestCase
     /**
      * The setup method that is run before any tests in this class.
      */
-    protected function setup(): void
+    protected function setUp(): void
     {
         $this->server = new BuiltInServer(
             'configLoader',
-            dirname(__FILE__, 3) . '/vendor/simplesamlphp/simplesamlphp/public'
+            dirname(__FILE__, 3) . '/vendor/simplesamlphp/simplesamlphp/public',
         );
         $this->server_addr = $this->server->start();
         $this->server_pid = $this->server->getPid();
         $this->shared_file = sys_get_temp_dir() . '/' . $this->server_pid . '.lock';
         $this->cookies_file = sys_get_temp_dir() . '/' . $this->server_pid . '.cookies';
-
 
         $this->updateConfig([
             'baseurlpath' => '/',
@@ -79,10 +79,12 @@ class LoginIntegrationTest extends TestCase
 
             'tempdir' => sys_get_temp_dir(),
             'loggingdir' => sys_get_temp_dir(),
+            'logging.handler' => 'file',
 
             'module.enable' => [
                 'casserver' => true,
-            ]
+                'exampleauth' => true,
+            ],
         ]);
     }
 
@@ -123,15 +125,15 @@ class LoginIntegrationTest extends TestCase
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
                 CURLOPT_COOKIEFILE => $this->cookies_file,
-                CURLOPT_FOLLOWLOCATION => true
-            ]
+                CURLOPT_FOLLOWLOCATION => true,
+            ],
         );
         $this->assertEquals(200, $resp['code']);
 
         $this->assertStringContainsString(
             'You are logged in.',
             $resp['body'],
-            'Login with no query parameters should make you authenticate and then take you to the login page.'
+            'Login with no query parameters should make you authenticate and then take you to the login page.',
         );
     }
 
@@ -147,25 +149,25 @@ class LoginIntegrationTest extends TestCase
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
                 CURLOPT_COOKIEFILE => $this->cookies_file,
-                CURLOPT_FOLLOWLOCATION => true
-            ]
+                CURLOPT_FOLLOWLOCATION => true,
+            ],
         );
         $this->assertEquals(500, $resp['code']);
 
         $this->assertStringContainsString(
             'CAS server is not listed as a legal service',
             $resp['body'],
-            'Illegal cas service urls should be rejected'
+            'Illegal cas service urls should be rejected',
         );
     }
 
 
     /**
      * Test a valid service URL
-     * @dataProvider validServiceUrlProvider
      * @param string $serviceParam The name of the query parameter to use for the service url
      * @param string $ticketParam The name of the query parameter that will contain the ticket
      */
+    #[DataProvider('validServiceUrlProvider')]
     public function testValidServiceUrl(string $serviceParam, string $ticketParam): void
     {
         $service_url = 'http://host1.domain:1234/path1';
@@ -177,15 +179,15 @@ class LoginIntegrationTest extends TestCase
             [$serviceParam => $service_url],
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
-                CURLOPT_COOKIEFILE => $this->cookies_file
-            ]
+                CURLOPT_COOKIEFILE => $this->cookies_file,
+            ],
         );
         $this->assertEquals(303, $resp['code']);
 
         $this->assertStringStartsWith(
             $service_url . '?' . $ticketParam . '=ST-',
             $resp['headers']['Location'],
-            'Ticket should be part of the redirect.'
+            'Ticket should be part of the redirect.',
         );
 
         // Config ticket can be validated
@@ -197,26 +199,26 @@ class LoginIntegrationTest extends TestCase
             [
                 $serviceParam => $service_url,
                 'ticket' => $ticket,
-                ],
+            ],
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
-                CURLOPT_COOKIEFILE => $this->cookies_file
-            ]
+                CURLOPT_COOKIEFILE => $this->cookies_file,
+            ],
         );
 
         $expectedResponse = DOMDocumentFactory::fromFile(
-            dirname(__FILE__, 2) . '/resources/xml/testValidServiceUrl.xml'
+            dirname(__FILE__, 2) . '/resources/xml/testValidServiceUrl.xml',
         )->saveXML();
 
         $this->assertEquals(200, $resp['code']);
         $this->assertEquals($expectedResponse, $resp['body']);
     }
 
-    public function validServiceUrlProvider(): array
+    public static function validServiceUrlProvider(): array
     {
         return [
             ['service', 'ticket'],
-            ['TARGET', 'SAMLart']
+            ['TARGET', 'SAMLart'],
         ];
     }
 
@@ -234,15 +236,15 @@ class LoginIntegrationTest extends TestCase
             ['TARGET' => $service_url],
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
-                CURLOPT_COOKIEFILE => $this->cookies_file
-            ]
+                CURLOPT_COOKIEFILE => $this->cookies_file,
+            ],
         );
         $this->assertEquals(303, $resp['code']);
 
         $this->assertStringStartsWith(
             $service_url . '?myTicket=ST-',
             $resp['headers']['Location'],
-            'Ticket should be part of the redirect.'
+            'Ticket should be part of the redirect.',
         );
     }
 
@@ -259,15 +261,15 @@ class LoginIntegrationTest extends TestCase
             ['service' => $service_url, 'debugMode' => 'true'],
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
-                CURLOPT_COOKIEFILE => $this->cookies_file
-            ]
+                CURLOPT_COOKIEFILE => $this->cookies_file,
+            ],
         );
         $this->assertEquals(200, $resp['code']);
 
         $this->assertStringContainsString(
             '&lt;cas:eduPersonPrincipalName&gt;testuser@example.com&lt;/cas:eduPersonPrincipalName&gt;',
             $resp['body'],
-            'Attributes should have been printed.'
+            'Attributes should have been printed.',
         );
     }
 
@@ -284,16 +286,16 @@ class LoginIntegrationTest extends TestCase
             ['service' => $service_url, 'debugMode' => 'samlValidate'],
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
-                CURLOPT_COOKIEFILE => $this->cookies_file
-            ]
+                CURLOPT_COOKIEFILE => $this->cookies_file,
+            ],
         );
         $this->assertEquals(200, $resp['code']);
 
 
         $this->assertStringContainsString(
-            'testuser@example.com&lt;/NameIdentifier',
+            'testuser@example.com&lt;/saml:NameIdentifier',
             $resp['body'],
-            'Attributes should have been printed.'
+            'Attributes should have been printed.',
         );
     }
 
@@ -310,19 +312,19 @@ class LoginIntegrationTest extends TestCase
             ['service' => $service_url, 'debugMode' => 'true'],
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
-                CURLOPT_COOKIEFILE => $this->cookies_file
-            ]
+                CURLOPT_COOKIEFILE => $this->cookies_file,
+            ],
         );
         $this->assertEquals(200, $resp['code']);
         $this->assertStringContainsString(
             '&lt;cas:user&gt;testuser&lt;/cas:user&gt;',
             $resp['body'],
-            'cas:user attribute should have been overridden'
+            'cas:user attribute should have been overridden',
         );
         $this->assertStringContainsString(
             '&lt;cas:cn&gt;Test User&lt;/cas:cn&gt;',
             $resp['body'],
-            'Attributes should have been printed with alternate attribute release'
+            'Attributes should have been printed with alternate attribute release',
         );
     }
 
@@ -343,8 +345,8 @@ class LoginIntegrationTest extends TestCase
             ],
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
-                CURLOPT_COOKIEFILE => $this->cookies_file
-            ]
+                CURLOPT_COOKIEFILE => $this->cookies_file,
+            ],
         );
 
         // POST responds with a form that is uses JavaScript to submit
@@ -371,12 +373,12 @@ class LoginIntegrationTest extends TestCase
         }
         $this->assertEquals(
             'ticket',
-            $item->getAttribute('name')
+            $item->getAttribute('name'),
         );
         $this->assertStringStartsWith(
             'ST-',
             $item->getAttribute('value'),
-            ''
+            '',
         );
     }
 
@@ -393,15 +395,15 @@ class LoginIntegrationTest extends TestCase
             ['service' => $service_url],
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
-                CURLOPT_COOKIEFILE => $this->cookies_file
-            ]
+                CURLOPT_COOKIEFILE => $this->cookies_file,
+            ],
         );
         $this->assertEquals(303, $resp['code']);
 
         $this->assertStringStartsWith(
             $service_url . '?ticket=ST-',
             $resp['headers']['Location'],
-            'Ticket should be part of the redirect.'
+            'Ticket should be part of the redirect.',
         );
 
         $location =  $resp['headers']['Location'];
@@ -424,11 +426,11 @@ SOAP;
             $soapRequest,
             [
                 'TARGET' => $service_url,
-            ]
+            ],
         );
 
         $this->assertEquals(200, $resp['code']);
-        $this->assertStringContainsString('testuser@example.com</NameIdentifier>', $resp['body']);
+        $this->assertStringContainsString('testuser@example.com</saml:NameIdentifier>', $resp['body']);
     }
 
 
@@ -444,8 +446,8 @@ SOAP;
             [
                 CURLOPT_COOKIEJAR => $this->cookies_file,
                 CURLOPT_COOKIEFILE => $this->cookies_file,
-                CURLOPT_FOLLOWLOCATION => true
-            ]
+                CURLOPT_FOLLOWLOCATION => true,
+            ],
         );
         $this->assertEquals(200, $resp['code'], $resp['body']);
     }
@@ -453,10 +455,10 @@ SOAP;
 
     /**
      * TODO: migrate into BuiltInServer
-     * @param resource $ch
+     * @param \CurlHandle $ch
      * @return array
      */
-    private function execAndHandleCurlResponse($ch): array
+    private function execAndHandleCurlResponse(CurlHandle $ch): array
     {
         $resp = curl_exec($ch);
         if ($resp === false) {

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Casserver;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use SimpleSAML\CAS\Constants as C;
 use SimpleSAML\Configuration;
 use SimpleSAML\Module\casserver\Cas\CasException;
 use SimpleSAML\Module\casserver\Cas\Ticket\FileSystemTicketStore;
@@ -53,7 +55,7 @@ class TicketValidatorTest extends TestCase
             $this->ticketValidator->validateAndDeleteTicket($id, 'efg');
             $this->fail('exception expected');
         } catch (CasException $e) {
-            $this->assertEquals('INVALID_TICKET', $e->getCasCode());
+            $this->assertEquals(C::ERR_INVALID_TICKET, $e->getCasCode());
             $this->assertEquals('Ticket \'' . $id . '\' not recognized', $e->getMessage());
         }
     }
@@ -76,7 +78,7 @@ class TicketValidatorTest extends TestCase
             $this->ticketValidator->validateAndDeleteTicket($id, $serviceUrl);
             $this->fail('exception expected');
         } catch (CasException $e) {
-            $this->assertEquals('INVALID_TICKET', $e->getCasCode());
+            $this->assertEquals(C::ERR_INVALID_TICKET, $e->getCasCode());
             $this->assertEquals('Ticket \'' . $id . '\' not recognized', $e->getMessage());
         }
     }
@@ -94,10 +96,10 @@ class TicketValidatorTest extends TestCase
             $this->ticketValidator->validateAndDeleteTicket($id, $serviceUrl);
             $this->fail('exception expected');
         } catch (CasException $e) {
-            $this->assertEquals('INVALID_SERVICE', $e->getCasCode());
+            $this->assertEquals(C::ERR_INVALID_SERVICE, $e->getCasCode());
             $this->assertEquals(
                 "Mismatching service parameters: expected 'http://otherurl.com' but was: 'http://efh.com?a=b&'",
-                $e->getMessage()
+                $e->getMessage(),
             );
         }
         // ensure ticket deleted after validation
@@ -117,7 +119,7 @@ class TicketValidatorTest extends TestCase
             $this->ticketValidator->validateAndDeleteTicket($id, $serviceUrl);
             $this->fail('exception expected');
         } catch (CasException $e) {
-            $this->assertEquals('INVALID_TICKET', $e->getCasCode());
+            $this->assertEquals(C::ERR_INVALID_TICKET, $e->getCasCode());
             $this->assertEquals('Ticket \'' . $id . '\' has expired', $e->getMessage());
         }
         // ensure ticket deleted after validation
@@ -125,10 +127,10 @@ class TicketValidatorTest extends TestCase
     }
 
     /**
-     * @dataProvider urlSanitizationProvider
      * @param string $serviceUrl The service url that will get sanitized
      * @param string $expectedSanitzedUrl The expected result
      */
+    #[DataProvider('urlSanitizationProvider')]
     public function testUrlSanitization(string $serviceUrl, string $expectedSanitzedUrl): void
     {
         $this->assertEquals($expectedSanitzedUrl, TicketValidator::sanitize($serviceUrl));
@@ -138,7 +140,7 @@ class TicketValidatorTest extends TestCase
      * Urls to test
      * @return array
      */
-    public function urlSanitizationProvider(): array
+    public static function urlSanitizationProvider(): array
     {
         return [
             [
@@ -152,13 +154,14 @@ class TicketValidatorTest extends TestCase
             [
                 'https://k.edu/kc/portal.do;jsessionid=99AC064A127?ct=Search&cu=https://k.edu/kc/as.do?ssf=456*&rsol=1',
                 'https://k.edu/kc/portal.do?ct=Search&cu=https://k.edu/kc/as.do?ssf=456*&rsol=1',
-            ]
+            ],
         ];
     }
 
 
     /**
      * Create a ticket to use for testing
+     *
      * @param string $serviceUrl The service url for this ticket
      * @param int $expiration seconds from now that ticket should expire
      * @return array the ticket contents
@@ -175,7 +178,7 @@ class TicketValidatorTest extends TestCase
             'userName' => 'bob',
             'attributes' => [],
             'proxies' => [],
-            'sessionId' => 'sesId'
+            'sessionId' => 'sesId',
         ];
         $this->ticketStore->addTicket($serviceTicket);
         return $serviceTicket;

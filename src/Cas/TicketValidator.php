@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace SimpleSAML\Module\casserver\Cas;
 
 use InvalidArgumentException;
+use SimpleSAML\CAS\Constants as C;
 use SimpleSAML\Configuration;
-use SimpleSAML\Error\BadRequest;
 use SimpleSAML\Logger;
 use SimpleSAML\Module;
 use SimpleSAML\Module\casserver\Cas\CasException;
 use SimpleSAML\Module\casserver\Cas\Ticket\TicketFactory;
 use SimpleSAML\Module\casserver\Cas\Ticket\TicketStore;
-use SimpleSAML\XML\CAS\Constants as C;
 
 class TicketValidator
 {
@@ -35,7 +34,7 @@ class TicketValidator
         $this->casconfig = $casconfig;
         $ticketStoreConfig = $casconfig->getOptionalValue(
             'ticketstore',
-            ['class' => 'casserver:FileSystemTicketStore']
+            ['class' => 'casserver:FileSystemTicketStore'],
         );
         $ticketStoreClass = Module::resolveClass($ticketStoreConfig['class'], 'Cas\Ticket');
         /**
@@ -109,7 +108,7 @@ class TicketValidator
         return preg_replace(
             '/;jsessionid=.*[^?].*$/U',
             '',
-            preg_replace('/;jsessionid=.*[?]/U', '?', urldecode($parameter))
+            preg_replace('/;jsessionid=.*[?]/U', '?', urldecode($parameter)),
         );
     }
 }

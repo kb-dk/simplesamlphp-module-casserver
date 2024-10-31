@@ -26,6 +26,8 @@
  *
  */
 
+declare(strict_types=1);
+
 require_once('utility/urlUtils.php');
 
 /* Load simpleSAMLphp, configuration and metadata */
@@ -43,7 +45,7 @@ if (array_key_exists('service', $_GET) && array_key_exists('ticket', $_GET)) {
         /* Instantiate ticket store */
         $ticketStoreConfig = $casconfig->getOptionalValue(
             'ticketstore',
-            ['class' => 'casserver:FileSystemTicketStore']
+            ['class' => 'casserver:FileSystemTicketStore'],
         );
         $ticketStoreClass = \SimpleSAML\Module::resolveClass($ticketStoreConfig['class'], 'Cas\Ticket');
         /** @psalm-suppress InvalidStringClass */
@@ -71,7 +73,7 @@ if (array_key_exists('service', $_GET) && array_key_exists('ticket', $_GET)) {
                 if (!array_key_exists($usernameField, $serviceTicket['attributes'])) {
                     \SimpleSAML\Logger::error(sprintf(
                         'casserver:validate: internal server error. Missing user name attribute: %s',
-                        var_export($usernameField, true)
+                        var_export($usernameField, true),
                     ));
 
                     echo $protocol->getValidateFailureResponse();

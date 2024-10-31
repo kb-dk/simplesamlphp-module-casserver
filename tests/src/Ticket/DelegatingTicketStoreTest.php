@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SimpleSAML\Casserver\Ticket;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
 use SimpleSAML\Configuration;
 use SimpleSAML\Logger;
@@ -34,7 +35,7 @@ class DelegatingTicketStoreTest extends TestCase
 
     /**
      */
-    public function setup(): void
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -51,7 +52,7 @@ class DelegatingTicketStoreTest extends TestCase
 
                 'module.enable' => [
                     'casserver' => true,
-                    'exampleauth' => true
+                    'exampleauth' => true,
                 ],
 
                 'debug' => true,
@@ -59,11 +60,11 @@ class DelegatingTicketStoreTest extends TestCase
                 'logging.handler' => 'errorlog',
             ],
             '[ARRAY]',
-            'simplesaml'
+            'simplesaml',
         );
         Configuration::setPreLoadedConfig($this->config, 'config.php');
 
-        $this->ticketstoreConfig = array(
+        $this->ticketstoreConfig = [
             'delegateTo' => 'all',
             'ticketStores' => [
                 'name1' => [
@@ -71,7 +72,7 @@ class DelegatingTicketStoreTest extends TestCase
                     'directory' => dirname(__DIR__, 2) . '/ticketcacheAlt',
                 ],
                 'error' => [
-                    'class' => ErroringTicketStore::class
+                    'class' => ErroringTicketStore::class,
                 ],
                 'name2' => [
                     'class' => 'casserver:FileSystemTicketStore',
@@ -81,14 +82,14 @@ class DelegatingTicketStoreTest extends TestCase
                     'class' => 'casserver:FileSystemTicketStore',
                     'directory' => 'does-not-exist',
                 ],
-            ]
-        );
+            ],
+        ];
 
         $this->fileStore1 = new FileSystemTicketStore(
-            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig['ticketStores']['name1']])
+            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig['ticketStores']['name1']]),
         );
         $this->fileStore2 = new FileSystemTicketStore(
-            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig['ticketStores']['name2']])
+            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig['ticketStores']['name2']]),
         );
     }
 
@@ -100,7 +101,7 @@ class DelegatingTicketStoreTest extends TestCase
     {
         $this->ticketstoreConfig['delegateTo'] = 'all';
         $ticketStore = new DelegatingTicketStore(
-            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig])
+            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig]),
         );
 
         $ticket = ['a' => 'b', 'id' => '1'];
@@ -129,7 +130,7 @@ class DelegatingTicketStoreTest extends TestCase
     {
         $this->ticketstoreConfig['delegateTo'] = 'first';
         $ticketStore = new DelegatingTicketStore(
-            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig])
+            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig]),
         );
 
         $ticket = ['a' => 'b', 'id' => '1'];
@@ -152,7 +153,7 @@ class DelegatingTicketStoreTest extends TestCase
     {
         $this->ticketstoreConfig['delegateTo'] = 'name2';
         $ticketStore = new DelegatingTicketStore(
-            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig])
+            Configuration::loadFromArray(['ticketstore' => $this->ticketstoreConfig]),
         );
 
         $ticket = ['a' => 'b', 'id' => '1'];
@@ -176,26 +177,26 @@ class DelegatingTicketStoreTest extends TestCase
      */
     public function testDelegateErrorsIfNoSuccess(): void
     {
-        $config = array(
+        $config = [
             'delegateTo' => 'all',
             'ticketStores' => [
                 'error' => [
-                    'class' => ErroringTicketStore::class
-                ]
-            ]
-        );
+                    'class' => ErroringTicketStore::class,
+                ],
+            ],
+        ];
 
         $ticketStore = new DelegatingTicketStore(Configuration::loadFromArray(['ticketstore' => $config]));
         try {
             $ticketStore->getTicket('abc');
             $this->fail('Exceptione expected');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->assertEquals('Sample get error', $e->getMessage());
         }
         try {
             $ticketStore->addTicket(['a' => 'b']);
             $this->fail('Exceptione expected');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->assertEquals('Sample add error', $e->getMessage());
         }
     }

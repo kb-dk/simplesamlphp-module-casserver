@@ -30,14 +30,11 @@
 declare(strict_types=1);
 
 use Exception;
+use SimpleSAML\CAS\Constants as C;
 use SimpleSAML\Configuration;
 use SimpleSAML\Logger;
 use SimpleSAML\Module;
-use SimpleSAML\Module\casserver\Cas\Protocol\Cas20;
-use SimpleSAML\Module\casserver\Cas\Ticket\TicketFactory;
-use SimpleSAML\Module\casserver\Cas\Ticket\TicketStore;
 use SimpleSAML\Utils;
-use SimpleSAML\XML\CAS\Constants as C;
 
 require_once('urlUtils.php');
 
@@ -57,7 +54,7 @@ if (isset($serviceUrl) && array_key_exists('ticket', $_GET)) {
     try {
         $ticketStoreConfig = $casconfig->getOptionalValue(
             'ticketstore',
-            ['class' => 'casserver:FileSystemTicketStore']
+            ['class' => 'casserver:FileSystemTicketStore'],
         );
         $ticketStoreClass = Module::resolveClass($ticketStoreConfig['class'], 'Cas\Ticket');
         /** @var TicketStore $ticketStore */
@@ -103,7 +100,7 @@ if (isset($serviceUrl) && array_key_exists('ticket', $_GET)) {
                             'attributes' => $attributes,
                             'forceAuthn' => false,
                             'proxies' => array_merge([$serviceUrl], $serviceTicket['proxies']),
-                            'sessionId' => $serviceTicket['sessionId']
+                            'sessionId' => $serviceTicket['sessionId'],
                         ]);
                         $httpUtils = new Utils\HTTP();
                         try {
@@ -169,7 +166,7 @@ if (isset($serviceUrl) && array_key_exists('ticket', $_GET)) {
         }
     } catch (Exception $e) {
         Logger::error(
-            'casserver:serviceValidate: internal server error. ' . var_export($e->getMessage(), true)
+            'casserver:serviceValidate: internal server error. ' . var_export($e->getMessage(), true),
         );
 
         echo $protocol->getValidateFailureResponse(C::ERR_INTERNAL_ERROR, $e->getMessage());
